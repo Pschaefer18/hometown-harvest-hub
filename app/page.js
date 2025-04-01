@@ -70,7 +70,7 @@ export default function Home() {
     <div className={styles.page}>
       <main className={styles.main}>
         <div className={styles.chart}>
-          <LineChartComponent collectionName="germination" />
+          <LineChartComponent collectionName="germination" chartTitle="Germination Chamber"/>
         </div>
 
         {/* Temperature Display and Edit Section */}
@@ -115,6 +115,9 @@ export default function Home() {
           ) : (
             <p>No temperature data available</p>
           )}
+        </div>
+        <div className={styles.chart}>
+          <LineChartComponent collectionName="greenhouse" chartTitle="Greenhouse"/>
         </div>
 
         {/* Uncomment this if you want to add the greenhouse chart back */}

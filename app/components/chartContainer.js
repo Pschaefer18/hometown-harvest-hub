@@ -8,7 +8,7 @@ import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc } from 
 // Dynamically import Plotly with SSR disabled
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
-const LineChartComponent = ({collectionName}) => {
+const LineChartComponent = ({collectionName, chartTitle}) => {
   const [data, setData] = useState([]);
   const [layout, setLayout] = useState({});
 
@@ -58,7 +58,7 @@ const LineChartComponent = ({collectionName}) => {
       // Set Plotly layout with dynamic ranges
       setLayout({
         title: 
-        {text: "Germination Chamber",},
+        {text: chartTitle,},
         xaxis: {
           title: {text: "Time"},
           type: "date",
