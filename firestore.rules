@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// Security rules for the main project (csa-registration-1ed70).
+// Publish in Firebase console → Firestore Database → Rules (see README).
+//
+// The website's server uses the Admin SDK, which bypasses these rules, so
+// checkout, the Stripe webhook, and inventory updates keep working unchanged.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only these Google accounts (keep in sync with ALLOWED_EMAILS in lib/config.js).
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['paul@hometownharvestllc.com', 'paul.r.schaefer11@gmail.com'];
+    }
+
+    function onlyChanges(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // CSA members ("2026 Members", "2027 Members", ...).
+    // The public registration form may add a NEW registration (unpaid) but can't
+    // read, overwrite, or delete anyone's. The owner can read and edit.
+    match /{collection}/{memberId} {
+      allow create: if collection.matches('[0-9]{4} Members')
+        && request.resource.data.paymentReceived == false;
+      allow read, update: if isOwner() && collection.matches('[0-9]{4} Members');
+    }
+
+    // Orders: written by the website server. The owner can read them and change
+    // only the hub's tracking fields, never items, prices, customer, or status.
+    match /Orders/{orderId} {
+      allow read: if isOwner();
+      allow update: if isOwner() && onlyChanges([
+        'packedAt', 'fulfilledAt',                 // status tracking
+        'deletedAt', 'stockReleased', 'restockedAt' // delete (hide) + restock
+      ]);
+    }
+
+    // Inventory: the owner can read it and put stock back when deleting a paid order.
+    match /Inventory/{productId} {
+      allow read: if isOwner();
+      allow update: if isOwner() && onlyChanges(['poundsAvailable', 'headsAvailable', 'updatedAt']);
+    }
+
+    // Geocoded delivery addresses (lat/lng), cached so each address is looked up once.
+    match /Geocodes/{addressId} {
+      allow read, write: if isOwner();
+    }
+
+    // Everything else is denied by default.
+  }
+}
